@@ -56,11 +56,27 @@ func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBui
                 return nil
             }
             
-            let swiftFields = fields.map { f in
+            let swiftFields: [SwiftMemberBuilder] = fields.map { f in
                 return SwiftFieldBuilder(f.name, getTypeReference(f.type))
             }
-            
+
             return SwiftTypeBuilder(name, .Class, swiftFields)
+        case .Enum:
+            guard let name = graphQLType.name else {
+                print("Enum type must have a name")
+                return nil
+            }
+            
+            guard let enumValues = graphQLType.enumValues else {
+                print("Enum type must have enumValues")
+                return nil
+            }
+            
+            let swiftFields: [SwiftMemberBuilder] = enumValues.map { v in
+                return SwiftEnumValueBuilder(v.name.lowercaseString.capitalizedString, v.name)
+            }
+            
+            return SwiftTypeBuilder(name, .Enum, swiftFields, [SwiftTypeReference(typeName: "String", optional: false, list: false)])
         default:
             print("Unable to handle \(graphQLType.kind)")
             return nil
@@ -73,8 +89,9 @@ command(
     Option("path", ".", description: "Output path, default: ."),
     Option("username", "", description: "HTTP Basic auth username"),
     Option("password", "", description: "HTTP Basic auth password"),
-    Flag("v", description: "Add verbose output")
-) { (url: String, path: String, username: String, password: String, verbose: Bool) in
+    Flag("v", description: "Add verbose output"),
+    Flag("r", description: "Raw body (old GraphQL servers accept the query as a raw POST)")
+) { (url: String, path: String, username: String, password: String, verbose: Bool, raw: Bool) in
     var headers: [String: String] = [:]
     
     if username != "" || password != "" {
@@ -83,7 +100,15 @@ command(
         headers["Authorization"] = "Basic " + (encodedData?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0)))!
     }
     
-    Alamofire.request(.POST, url, parameters: ["query": introspectionQuery], headers: headers)
+    var parameters = ["query": introspectionQuery]
+    
+    var rawBodyEncoder: ParameterEncoding = .Custom({ (convertible, params) in
+        var mutableRequest = convertible.URLRequest.copy() as! NSMutableURLRequest
+        mutableRequest.HTTPBody = introspectionQuery.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+        return (mutableRequest, nil)
+    })
+    
+    Alamofire.request(.POST, url, parameters: parameters, headers: headers, encoding: raw ? rawBodyEncoder : .URL)
         .responseJSON { r in
             guard let response = IntrospectionQueryResponse.from(r.result.value as? [String: AnyObject] ?? [:]) else {
                 print("Error: incorrect response")

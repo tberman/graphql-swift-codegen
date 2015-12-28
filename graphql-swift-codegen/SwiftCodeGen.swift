@@ -31,29 +31,42 @@ class SwiftTypeBuilder {
     
     let name: String
     let kind: Kind
-    let fields: [SwiftFieldBuilder]
+    let members: [SwiftMemberBuilder]
+    let inheritedTypes: [SwiftTypeReference]
     
-    init(_ name: String, _ kind: Kind, _ fields: [SwiftFieldBuilder]) {
+    convenience init(_ name: String, _ kind: Kind, _ members: [SwiftMemberBuilder]) {
+        self.init(name, kind, members, [])
+    }
+    
+    init (_ name: String, _ kind: Kind, _ members: [SwiftMemberBuilder], _ inheritedTypes: [SwiftTypeReference]) {
         self.name = name
         self.kind = kind
-        self.fields = fields
+        self.members = members
+        self.inheritedTypes = inheritedTypes
     }
     
     var code: String {
+        let typeDeclaration = "\(kind.rawValue) \(name)" +
+            (inheritedTypes.count > 0 ? ": " + (inheritedTypes.map { $0.code }.joinWithSeparator(",")) : "")
+        
         return
-            "class \(name) {\n" +
-                (fields.map { "    " + $0.code }).joinWithSeparator("\n") + "\n" +
+            "\(typeDeclaration) {\n" +
+                (members.map { "    " + $0.code }).joinWithSeparator("\n") + "\n" +
             "}\n"
     }
     
-    enum Kind {
-        case Class
-        case Protocol
-        case Enum
+    enum Kind: String {
+        case Class = "class"
+        case Protocol = "protocol"
+        case Enum = "enum"
     }
 }
 
-class SwiftFieldBuilder {
+protocol SwiftMemberBuilder {
+    var code: String { get }
+}
+
+class SwiftFieldBuilder: SwiftMemberBuilder {
     let name: String
     let typeReference: SwiftTypeReference
     
@@ -64,5 +77,19 @@ class SwiftFieldBuilder {
     
     var code: String {
         return "var \(name): \(typeReference.code)"
+    }
+}
+
+class SwiftEnumValueBuilder: SwiftMemberBuilder {
+    let name: String
+    let value: String
+    
+    init(_ name: String, _ value: String) {
+        self.name = name
+        self.value = value
+    }
+    
+    var code: String {
+        return "case \(name) = \"\(value)\""
     }
 }
