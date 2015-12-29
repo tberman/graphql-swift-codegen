@@ -13,7 +13,7 @@ This will put the binary in `./build/graphql-swift-codegen/bin/`.
 ## Usage
 
 ```
-$ ./build/graphql-swift-codegen/bin/graphql-swift-codegen url
+$ graphql-swift-codegen url
 
 Options:
   --path - Output path, default: .
