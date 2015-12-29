@@ -11,5 +11,5 @@ install:
 - gem install xcpretty --no-rdoc --no-ri --no-document --quiet
 
 script:
-- set -o pipefail && rake build | xcpretty -c
+- set -o pipefail && pod install && rake build | xcpretty -c
 #- pod lib lint --quick GenumKit/GenumKit.podspec
