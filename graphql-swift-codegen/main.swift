@@ -73,6 +73,22 @@ func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBui
             let interfaceReferences = graphQLType.interfaces?.map { SwiftTypeReference($0.name!) } ?? []
 
             return SwiftTypeBuilder(name, graphQLType.kind == .Object ? .Class : .Protocol, swiftFields, interfaceReferences)
+        case .InputObject:
+            guard let name = graphQLType.name else {
+                print("InputObject type must have a name")
+                return nil
+            }
+            
+            guard let fields = graphQLType.inputFields else {
+                print("InputObject type must have inputFields")
+                return nil
+            }
+            
+            let swiftFields: [SwiftMemberBuilder] = fields.map { f in
+                return SwiftFieldBuilder(f.name, getTypeReference(f.type))
+            }
+            
+            return SwiftTypeBuilder(name, .Class, swiftFields)
         case .Enum:
             guard let name = graphQLType.name else {
                 print("Enum type must have a name")
@@ -101,15 +117,18 @@ command(
     Option("path", ".", description: "Output path, default: ."),
     Option("username", "", description: "HTTP Basic auth username"),
     Option("password", "", description: "HTTP Basic auth password"),
+    Option("bearer", "", description: "HTTP Bearer auth token, eg: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1N..."),
     Flag("v", description: "Add verbose output"),
     Flag("r", description: "Raw body (old GraphQL servers accept the query as a raw POST)")
-) { (url: String, path: String, username: String, password: String, verbose: Bool, raw: Bool) in
+) { (url: String, path: String, username: String, password: String, bearerToken: String, verbose: Bool, raw: Bool) in
     var headers: [String: String] = [:]
     
     if username != "" || password != "" {
         let encodedData = (username + ":" + password).dataUsingEncoding(NSUTF8StringEncoding)
         
         headers["Authorization"] = "Basic " + (encodedData?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0)))!
+    } else if bearerToken != "" {
+        headers["Authorization"] = "Bearer \(bearerToken)"
     }
     
     var parameters = ["query": introspectionQuery]
