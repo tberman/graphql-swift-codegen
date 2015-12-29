@@ -1,5 +1,7 @@
 # graphql-swift-codegen
 
+[![Build Status](https://travis-ci.org/tberman/graphql-swift-codegen.svg?branch=master)](https://travis-ci.org/tberman/graphql-swift-codegen)
+
 graphql-swift-codegen will generate swift code based on the schema provided.
 
 ## Install
