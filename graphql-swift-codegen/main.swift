@@ -55,22 +55,24 @@ func getTypeReference(type: GraphQLTypeDescription) -> SwiftTypeReference {
 func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBuilder] {
     return types.flatMap { graphQLType in
         switch graphQLType.kind {
-        case .Object:
+        case .Object, .Interface:
             guard let name = graphQLType.name else {
-                print("Object type must have a name")
+                print("Object/Interface type must have a name")
                 return nil
             }
             
             guard let fields = graphQLType.fields else {
-                print("Object type must have fields")
+                print("Object/Interface type must have fields")
                 return nil
             }
             
             let swiftFields: [SwiftMemberBuilder] = fields.map { f in
                 return SwiftFieldBuilder(f.name, getTypeReference(f.type))
             }
+            
+            let interfaceReferences = graphQLType.interfaces?.map { SwiftTypeReference($0.name!) } ?? []
 
-            return SwiftTypeBuilder(name, .Class, swiftFields)
+            return SwiftTypeBuilder(name, graphQLType.kind == .Object ? .Class : .Protocol, swiftFields, interfaceReferences)
         case .Enum:
             guard let name = graphQLType.name else {
                 print("Enum type must have a name")
