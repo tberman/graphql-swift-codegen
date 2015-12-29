@@ -7,23 +7,30 @@
 
 import Foundation
 
-struct SwiftTypeReference {
+class SwiftTypeReference {
     let typeName: String
-    let optional: Bool
-    let list: Bool
+    let genericParameters: [SwiftTypeReference]
+    
+    init(_ typeName: String, genericParameters: [SwiftTypeReference] = []) {
+        self.typeName = typeName
+        self.genericParameters = genericParameters
+    }
     
     var code: String {
-        var c = typeName
-        
-        if list {
-            c = "[" + c + "]"
+        switch (typeName) {
+        case "Optional":
+            return genericParameters[0].code + "?"
+        case "Array":
+            return "[" + genericParameters[0].code + "]"
+        default:
+            var c = typeName
+            
+            if genericParameters.count > 0 {
+                c = c + "<" + (genericParameters.map { $0.code }).joinWithSeparator(", ") + ">"
+            }
+            
+            return c
         }
-        
-        if optional {
-            c = c + "?"
-        }
-        
-        return c
     }
 }
 

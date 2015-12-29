@@ -20,25 +20,35 @@ struct IntrospectionQueryResponse: Mappable {
     }
 }
 
+private func wrapOptional(ref: SwiftTypeReference) -> SwiftTypeReference {
+    return SwiftTypeReference("Optional", genericParameters: [ref])
+}
+
+private func unwrapOptional(ref: SwiftTypeReference) -> SwiftTypeReference {
+    if ref.typeName == "Optional" {
+        return ref.genericParameters[0]
+    }
+    
+    return ref
+}
+
 func getTypeReference(type: GraphQLTypeDescription) -> SwiftTypeReference {
     switch (type.kind) {
     case .Scalar:
         switch (type.name!) {
         case "ID":
-            return SwiftTypeReference(typeName: "String", optional: false, list: false)
+            return wrapOptional(SwiftTypeReference("String"))
         case "Boolean":
-            return SwiftTypeReference(typeName: "Bool", optional: false, list: false)
+            return wrapOptional(SwiftTypeReference("Bool"))
         default:
-            return SwiftTypeReference(typeName: type.name!, optional: false, list: false)
+            return wrapOptional(SwiftTypeReference(type.name!))
         }
     case .List:
-        let typeRef = getTypeReference(type.ofType!)
-        return SwiftTypeReference(typeName: typeRef.typeName, optional: typeRef.optional, list: true)
+        return wrapOptional(SwiftTypeReference("Array", genericParameters: [getTypeReference(type.ofType!)]))
     case .NonNull:
-        let typeRef = getTypeReference(type.ofType!)
-        return SwiftTypeReference(typeName: typeRef.typeName, optional: false, list: typeRef.list)
+        return unwrapOptional(getTypeReference(type.ofType!))
     default:
-        return SwiftTypeReference(typeName: type.name!, optional: true, list: false)
+        return wrapOptional(SwiftTypeReference(type.name!))
     }
 }
 
@@ -76,7 +86,7 @@ func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBui
                 return SwiftEnumValueBuilder(v.name.lowercaseString.capitalizedString, v.name)
             }
             
-            return SwiftTypeBuilder(name, .Enum, swiftFields, [SwiftTypeReference(typeName: "String", optional: false, list: false)])
+            return SwiftTypeBuilder(name, .Enum, swiftFields, [SwiftTypeReference("String")])
         default:
             print("Unable to handle \(graphQLType.kind)")
             return nil
