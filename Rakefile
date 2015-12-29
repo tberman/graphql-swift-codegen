@@ -1,6 +1,7 @@
 #!/usr/bin/rake
 require 'pathname'
 
+
 ## [ Constants ] ##############################################################
 
 BIN_NAME = 'graphql-swift-codegen'
