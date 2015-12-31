@@ -20,35 +20,31 @@ struct IntrospectionQueryResponse: Mappable {
     }
 }
 
-private func wrapOptional(ref: SwiftTypeReference) -> SwiftTypeReference {
-    return SwiftTypeReference("Optional", genericParameters: [ref])
-}
-
-private func unwrapOptional(ref: SwiftTypeReference) -> SwiftTypeReference {
-    if ref.typeName == "Optional" {
-        return ref.genericParameters[0]
-    }
-    
-    return ref
-}
-
 func getTypeReference(type: GraphQLTypeDescription) -> SwiftTypeReference {
     switch (type.kind) {
     case .Scalar:
         switch (type.name!) {
         case "ID":
-            return wrapOptional(SwiftTypeReference("String"))
+            return SwiftTypeReference("String").wrapOptional()
         case "Boolean":
-            return wrapOptional(SwiftTypeReference("Bool"))
+            return SwiftTypeReference("Bool").wrapOptional()
         default:
-            return wrapOptional(SwiftTypeReference(type.name!))
+            return SwiftTypeReference(type.name!).wrapOptional()
         }
     case .List:
-        return wrapOptional(SwiftTypeReference("Array", genericParameters: [getTypeReference(type.ofType!)]))
+        guard let innerType = type.ofType else {
+            print("List type missing inner type")
+            return SwiftTypeReference("INVALID_TYPE")
+        }
+        return SwiftTypeReference("Array", genericParameters: [getTypeReference(innerType)]).wrapOptional()
     case .NonNull:
-        return unwrapOptional(getTypeReference(type.ofType!))
+        guard let innerType = type.ofType else {
+            print("NonNull type missing inner type")
+            return SwiftTypeReference("INVALID_TYPE")
+        }
+        return getTypeReference(innerType).unwrapOptional()
     default:
-        return wrapOptional(SwiftTypeReference(type.name!))
+        return SwiftTypeReference(type.name!).wrapOptional()
     }
 }
 
