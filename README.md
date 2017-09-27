@@ -1,3 +1,9 @@
+# DEPRECATED IN FAVOUR OF 
+https://github.com/apollographql/apollo-codegen
+
+
+
+
 # graphql-swift-codegen
 
 [![Build Status](https://travis-ci.org/tberman/graphql-swift-codegen.svg?branch=master)](https://travis-ci.org/tberman/graphql-swift-codegen)
