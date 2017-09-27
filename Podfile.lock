@@ -1,16 +1,18 @@
 PODS:
-  - Alamofire (3.1.4)
-  - Commander (0.4.0)
-  - ModelMapper (1.0.1)
+  - Alamofire (4.5.1)
+  - Commander (0.7.0)
+  - ModelMapper (7.1.0)
 
 DEPENDENCIES:
-  - Alamofire (~> 3.0)
-  - Commander (~> 0.4)
+  - Alamofire
+  - Commander
   - ModelMapper
 
 SPEC CHECKSUMS:
-  Alamofire: fbc829692f351fa1d8a31dd75fd7f7f56fea31fb
-  Commander: d8b6fb03ede480cf565ab0caa86d9670766936b4
-  ModelMapper: 724dba38a40af2f23b6512a3e729ac7f5a7fde5c
+  Alamofire: 2d95912bf4c34f164fdfc335872e8c312acaea4a
+  Commander: a12712a84e9641e712aa5b6c196fddb8d6556189
+  ModelMapper: 0cc9e34061838c0ece4efd6ba3ae147bf7760a1b
 
-COCOAPODS: 0.39.0
+PODFILE CHECKSUM: bcd297bc6554e1ee6812dd5f96470299b0548e32
+
+COCOAPODS: 1.2.1

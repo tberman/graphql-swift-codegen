@@ -1,6 +1,11 @@
 platform :osx, '10.11'
-use_frameworks!
 
-pod 'Commander', '~> 0.4'
-pod 'Alamofire', '~> 3.0'
-pod 'ModelMapper'
+target 'graphql-swift-codegen' do
+  # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
+  use_frameworks!
+
+  pod 'Commander'
+  pod 'Alamofire'
+  pod 'ModelMapper'
+
+end

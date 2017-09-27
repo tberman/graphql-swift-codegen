@@ -36,13 +36,13 @@ func getTypeReference(type: GraphQLTypeDescription) -> SwiftTypeReference {
             print("List type missing inner type")
             return SwiftTypeReference("INVALID_TYPE")
         }
-        return SwiftTypeReference("Array", genericParameters: [getTypeReference(innerType)]).wrapOptional()
+        return SwiftTypeReference("Array", genericParameters: [getTypeReference(type: innerType)]).wrapOptional()
     case .NonNull:
         guard let innerType = type.ofType else {
             print("NonNull type missing inner type")
             return SwiftTypeReference("INVALID_TYPE")
         }
-        return getTypeReference(innerType).unwrapOptional()
+        return getTypeReference(type: innerType).unwrapOptional()
     default:
         return SwiftTypeReference(type.name!).wrapOptional()
     }
@@ -63,7 +63,7 @@ func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBui
             }
             
             let swiftFields: [SwiftMemberBuilder] = fields.map { f in
-                return SwiftFieldBuilder(f.name, getTypeReference(f.type))
+                return SwiftFieldBuilder(f.name, getTypeReference(type: f.type))
             }
             
             let interfaceReferences = graphQLType.interfaces?.map { SwiftTypeReference($0.name!) } ?? []
@@ -81,7 +81,7 @@ func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBui
             }
             
             let swiftFields: [SwiftMemberBuilder] = fields.map { f in
-                return SwiftFieldBuilder(f.name, getTypeReference(f.type))
+                return SwiftFieldBuilder(f.name, getTypeReference(type: f.type))
             }
             
             return SwiftTypeBuilder(name, .Class, swiftFields)
@@ -97,7 +97,7 @@ func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBui
             }
             
             let swiftFields: [SwiftMemberBuilder] = enumValues.map { v in
-                return SwiftEnumValueBuilder(v.name.lowercaseString.capitalizedString, v.name)
+                return SwiftEnumValueBuilder(v.name, v.name)
             }
             
             return SwiftTypeBuilder(name, .Enum, swiftFields, [SwiftTypeReference("String")])
@@ -120,24 +120,25 @@ command(
     var headers: [String: String] = [:]
     
     if username != "" || password != "" {
-        let encodedData = (username + ":" + password).dataUsingEncoding(NSUTF8StringEncoding)
+        let encodedData = (username + ":" + password).data(using: String.Encoding.utf8)
         
-        headers["Authorization"] = "Basic " + (encodedData?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0)))!
+        headers["Authorization"] = "Basic " + (encodedData?.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0)))!
     } else if bearerToken != "" {
         headers["Authorization"] = "Bearer \(bearerToken)"
     }
     
-    var parameters = ["query": introspectionQuery]
-    
-    var rawBodyEncoder: ParameterEncoding = .Custom({ (convertible, params) in
-        var mutableRequest = convertible.URLRequest.copy() as! NSMutableURLRequest
-        mutableRequest.HTTPBody = introspectionQuery.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        return (mutableRequest, nil)
-    })
-    
-    Alamofire.request(.POST, url, parameters: parameters, headers: headers, encoding: raw ? rawBodyEncoder : .URL)
-        .responseJSON { r in
-            guard let response = IntrospectionQueryResponse.from(r.result.value as? [String: AnyObject] ?? [:]) else {
+    let parameters = ["query": introspectionQuery]
+//
+//    var rawBodyEncoder: ParameterEncoding = .custom({ (convertible, params) in
+//        var mutableRequest = convertible.URLRequest.copy() as! NSMutableURLRequest
+//        mutableRequest.HTTPBody = introspectionQuery.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        return (mutableRequest, nil)
+//    })
+//
+    Alamofire.request(url, method: .post, parameters: parameters, encoding: URLEncoding(destination: .queryString), headers: nil)
+        .validate().responseJSON { r in
+            let test = r.result.value as? NSDictionary ?? [:]
+            guard let response = IntrospectionQueryResponse.from(test) else {
                 print("Error: incorrect response")
                 
                 if verbose {
@@ -147,7 +148,7 @@ command(
                 exit(0)
             }
             
-            convertFromGraphQLToSwift(response.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
+            convertFromGraphQLToSwift(types: response.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
                 let outputFile = "\(path)/\(builder.name).swift"
                 
                 let code = builder.code
@@ -157,7 +158,7 @@ command(
                 }
                 
                 do {
-                    try code.writeToFile(outputFile, atomically: false, encoding: NSUTF8StringEncoding)
+                    try code.write(toFile: outputFile, atomically: false, encoding: String.Encoding.utf8)
                 } catch {
                     print("Unable to write to \(outputFile)")
                 }
@@ -166,5 +167,5 @@ command(
             exit(0)
         }
     
-    dispatch_main()
+    dispatchMain()
 }.run()
