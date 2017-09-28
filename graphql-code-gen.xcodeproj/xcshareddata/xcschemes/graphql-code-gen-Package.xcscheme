@@ -28,6 +28,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "Files::Files"
+               BuildableName = "Files.framework"
+               BlueprintName = "Files"
+               ReferencedContainer = "container:graphql-code-gen.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "Alamofire::Alamofire"
                BuildableName = "Alamofire.framework"
                BlueprintName = "Alamofire"
@@ -42,9 +56,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "Mapper::Mapper"
-               BuildableName = "Mapper.framework"
-               BlueprintName = "Mapper"
+               BlueprintIdentifier = "Unbox::Unbox"
+               BuildableName = "Unbox.framework"
+               BlueprintName = "Unbox"
                ReferencedContainer = "container:graphql-code-gen.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
