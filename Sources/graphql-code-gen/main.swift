@@ -1,106 +1,12 @@
 import Foundation
 import Alamofire
 import Commander
-import Mapper
+import Unbox
 
 
 let introspectionQuery = "query IntrospectionQuery { __schema {     queryType { name }     mutationType { name }     subscriptionType { name }     types {         ...FullType     }     directives {         name         description         args {             ...InputValue         }         onOperation         onFragment         onField     } } }  fragment FullType on __Type {     kind     name     description     fields(includeDeprecated: true) {         name         description         args {             ...InputValue         }         type {             ...TypeRef         }         isDeprecated         deprecationReason     }     inputFields {         ...InputValue     }     interfaces {         ...TypeRef     }     enumValues(includeDeprecated: true) {         name         description         isDeprecated         deprecationReason     }     possibleTypes {         ...TypeRef     } }  fragment InputValue on __InputValue {     name     description     type { ...TypeRef }     defaultValue }  fragment TypeRef on __Type {     kind     name     ofType {     kind     name     ofType {     kind     name     ofType {     kind     name     }     }     } }"
 
-struct IntrospectionQueryResponse: Mappable {
-    let types: [GraphQLTypeDescription]
-    
-    init(map: Mapper) throws {
-        try types = map.from("data.__schema.types")
-    }
-}
 
-func getTypeReference(type: GraphQLTypeDescription) -> SwiftTypeReference {
-    switch (type.kind) {
-    case .Scalar:
-        switch (type.name!) {
-        case "ID":
-            return SwiftTypeReference("String").wrapOptional()
-        case "Boolean":
-            return SwiftTypeReference("Bool").wrapOptional()
-        default:
-            return SwiftTypeReference(type.name!).wrapOptional()
-        }
-    case .List:
-        guard let innerType = type.ofType else {
-            print("List type missing inner type")
-            return SwiftTypeReference("INVALID_TYPE")
-        }
-        return SwiftTypeReference("Array", genericParameters: [getTypeReference(type: innerType)]).wrapOptional()
-    case .NonNull:
-        guard let innerType = type.ofType else {
-            print("NonNull type missing inner type")
-            return SwiftTypeReference("INVALID_TYPE")
-        }
-        return getTypeReference(type: innerType).unwrapOptional()
-    default:
-        return SwiftTypeReference(type.name!).wrapOptional()
-    }
-}
-
-func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBuilder] {
-    return types.flatMap { graphQLType in
-        switch graphQLType.kind {
-        case .Object, .Interface:
-            guard let name = graphQLType.name else {
-                print("Object/Interface type must have a name")
-                return nil
-            }
-            
-            guard let fields = graphQLType.fields else {
-                print("Object/Interface type must have fields")
-                return nil
-            }
-            
-            let swiftFields: [SwiftMemberBuilder] = fields.map { f in
-                return SwiftFieldBuilder(f.name, getTypeReference(type: f.type))
-            }
-            
-            let interfaceReferences = graphQLType.interfaces?.map { SwiftTypeReference($0.name!) } ?? []
-
-            return SwiftTypeBuilder(name, graphQLType.kind == .Object ? .Class : .Protocol, swiftFields, interfaceReferences)
-        case .InputObject:
-            guard let name = graphQLType.name else {
-                print("InputObject type must have a name")
-                return nil
-            }
-            
-            guard let fields = graphQLType.inputFields else {
-                print("InputObject type must have inputFields")
-                return nil
-            }
-            
-            let swiftFields: [SwiftMemberBuilder] = fields.map { f in
-                return SwiftFieldBuilder(f.name, getTypeReference(type: f.type))
-            }
-            
-            return SwiftTypeBuilder(name, .Class, swiftFields)
-        case .Enum:
-            guard let name = graphQLType.name else {
-                print("Enum type must have a name")
-                return nil
-            }
-            
-            guard let enumValues = graphQLType.enumValues else {
-                print("Enum type must have enumValues")
-                return nil
-            }
-            
-            let swiftFields: [SwiftMemberBuilder] = enumValues.map { v in
-                return SwiftEnumValueBuilder(v.name, v.name)
-            }
-            
-            return SwiftTypeBuilder(name, .Enum, swiftFields, [SwiftTypeReference("String")])
-        default:
-            print("Unable to handle \(graphQLType.kind)")
-            return nil
-        }
-    }
-}
 
 command(
     Argument("url"),
@@ -115,42 +21,14 @@ command(
     
     
     
-    getKodeSmells()
-        .responseJSON { response in
-            print("Request: \(String(describing: response.request))")   // original url request
-            print("Response: \(String(describing: response.response))") // http url response
-            print("Result: \(response.result)")                         // response serialization result
-            
-            
-            if let result = response.result.value {
-                let json = result as! NSDictionary
-                print("JSON: \(json)") // serialized json response
-                
-                if let data = json.object(forKey: "data") as? [String : AnyObject]{
-                    print(data)
-                    
-                    graphQLDescriptionFrom(result: response)
-//
-//                    convertFromGraphQLToSwift(types: response.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
-//                        let outputFile = "\(path)/\(builder.name).swift"
-//
-//                        let code = builder.code
-//
-//                        if verbose {
-//                            print(code)
-//                        }
-//
-//                        do {
-//                            try code.write(toFile: outputFile, atomically: false, encoding: String.Encoding.utf8)
-//                        } catch {
-//                            print("Unable to write to \(outputFile)")
-//                        }
-//                    }
-                    
-                }
-            }else{
-                print("FAILED!!!")
-            }
+    getKodeSmells().responseArray { (response: DataResponse<[GraphQLTypeDescription]>) in
+        
+        if let error = response.result.error as? UnboxedAlamofireError {
+           print("debug:", response.result.value ?? "")
+            print("error:",error)
+        }
+        print("response:",response)
+    
     }
     dispatchMain()
     
@@ -174,32 +52,25 @@ command(
                       encoding: JSONEncoding.default).responseJSON { r in
             let test = r.result.value as? NSDictionary ?? [:]
             print("r:",r)
-            guard let response = IntrospectionQueryResponse.from(test) else {
-                print("Error: incorrect response")
-                
-                if verbose {
-                    print(r)
-                }
-                
-                exit(0)
-            }
-            
-            convertFromGraphQLToSwift(types: response.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
-                let outputFile = "\(path)/\(builder.name).swift"
-                
-                let code = builder.code
-                
-                if verbose {
-                    print(code)
-                }
-                
-                do {
-                    try code.write(toFile: outputFile, atomically: false, encoding: String.Encoding.utf8)
-                } catch {
-                    print("Unable to write to \(outputFile)")
-                }
-            }
-            
+          
+//
+//
+//            convertFromGraphQLToSwift(types: response.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
+//                let outputFile = "\(path)/\(builder.name).swift"
+//
+//                let code = builder.code
+//
+//                if verbose {
+//                    print(code)
+//                }
+//
+//                do {
+//                    try code.write(toFile: outputFile, atomically: false, encoding: String.Encoding.utf8)
+//                } catch {
+//                    print("Unable to write to \(outputFile)")
+//                }
+//            }
+//
             exit(0)
         }
     
