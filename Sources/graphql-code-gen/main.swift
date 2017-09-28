@@ -19,60 +19,37 @@ command(
 ) {
     (url: String, path: String, username: String, password: String, bearerToken: String, verbose: Bool, raw: Bool) in
     
-    
-    
-    getKodeSmells().responseArray { (response: DataResponse<[GraphQLTypeDescription]>) in
+    getKodeSmells().responseJSON { response in
+        print("Request: \(String(describing: response.request))")   // original url request
+        print("Response: \(String(describing: response.response))") // http url response
+        print("Result: \(response.result)")                         // response serialization result
         
-        if let error = response.result.error as? UnboxedAlamofireError {
-           print("debug:", response.result.value ?? "")
-            print("error:",error)
+        if let result = response.result.value {
+            let json = result as! UnboxableDictionary
+            print("JSON: \(json)") // serialized json response
+            
+            
+            let  _ = try? Unboxer.performCustomUnboxing(dictionary: json, closure: { unboxer in
+                do{
+                    let qry  = try IntrospectionQueryResponse(unboxer:unboxer)
+                    print("qry:",qry)
+                }
+                catch let error{
+                    print("Error: incorrect response :",error)
+                }
+                exit(0)
+            })
+         
+        }else{
+            print("FAIL!!!")
         }
-        print("response:",response)
-    
+      
     }
-    dispatchMain()
+   
     
-    var headers: [String: String] = [:]
-    
-    if username != "" || password != "" {
-        let encodedData = (username + ":" + password).data(using: String.Encoding.utf8)
-        
-        headers["Authorization"] = "Basic " + (encodedData?.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0)))!
-    } else if bearerToken != "" {
-        headers["Authorization"] = "Bearer \(bearerToken)"
-    }
-    
-    let parameters = ["query": introspectionQuery]
+       dispatchMain()
 
 
-
-    Alamofire.request(url,
-                      method:.post,
-                      parameters:parameters,
-                      encoding: JSONEncoding.default).responseJSON { r in
-            let test = r.result.value as? NSDictionary ?? [:]
-            print("r:",r)
-          
-//
-//
-//            convertFromGraphQLToSwift(types: response.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
-//                let outputFile = "\(path)/\(builder.name).swift"
-//
-//                let code = builder.code
-//
-//                if verbose {
-//                    print(code)
-//                }
-//
-//                do {
-//                    try code.write(toFile: outputFile, atomically: false, encoding: String.Encoding.utf8)
-//                } catch {
-//                    print("Unable to write to \(outputFile)")
-//                }
-//            }
-//
-            exit(0)
-        }
-    
-    dispatchMain()
 }.run()
+
+
