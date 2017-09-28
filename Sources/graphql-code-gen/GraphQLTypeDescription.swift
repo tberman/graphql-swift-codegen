@@ -9,7 +9,7 @@ import Foundation
 import Mapper
 
 // class to avoid having to Box ofType
-final class GraphQLTypeDescription: Mappable {
+public class GraphQLTypeDescription: Mappable {
     let kind: GraphQLTypeKind
     let name: String?
     let description: String?
@@ -20,7 +20,7 @@ final class GraphQLTypeDescription: Mappable {
     let inputFields: [GraphQLInputFieldDescription]?
     let ofType: GraphQLTypeDescription?
     
-    required init(map: Mapper) throws {
+    required public init(map: Mapper) throws {
         // This should be try kind = map.from("kind") but working around http://www.openradar.me/23472747
         kind = map.optionalFrom("kind") ?? .Scalar
         name = map.optionalFrom("name")

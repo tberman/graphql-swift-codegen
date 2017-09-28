@@ -20,6 +20,15 @@
         }
       },
       {
+        "package": "Files",
+        "repositoryURL": "https://github.com/johnsundell/files.git",
+        "state": {
+          "branch": null,
+          "revision": "c2b337cd9cbe91622830e7e0f8ca76845ba81ca6",
+          "version": "1.12.0"
+        }
+      },
+      {
         "package": "Mapper",
         "repositoryURL": "https://github.com/lyft/mapper.git",
         "state": {
@@ -35,6 +44,15 @@
           "branch": null,
           "revision": "e34d5687e1e9d865e3527dd58bc2f7464ef6d936",
           "version": "0.8.0"
+        }
+      },
+      {
+        "package": "Unbox",
+        "repositoryURL": "https://github.com/johnsundell/unbox.git",
+        "state": {
+          "branch": null,
+          "revision": "17ad6aa1cc2f1efa27a0bbbdb66f79796708aa95",
+          "version": "2.5.0"
         }
       }
     ]
