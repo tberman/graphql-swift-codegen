@@ -83,7 +83,7 @@ enum GraphQLTypeKind: Int, UnboxableEnum {
     case inputObject
     case list
     case nonnull
-    
+    case undefined
     
 }
 
@@ -91,22 +91,34 @@ enum GraphQLTypeKind: Int, UnboxableEnum {
 struct GraphQLTypeKindFormatter: UnboxFormatter {
     func format(unboxedValue: String) -> GraphQLTypeKind? {
         let components = unboxedValue.components(separatedBy: ":")
-        
-        guard components.count == 2 else {
-            return nil
-        }
+    //
+      //  guard components.count == 2 else {
+        //    return nil
+       // }
         
         let identifier = components[0]
-        
-        guard let value = Int(components[1]) else {
-            return nil
-        }
-        
+       
         switch identifier {
+
         case "SCALAR":
             return .scalar
+        case "OBJECT":
+            return .object
+        case "INTERFACE":
+            return .interface
+        case "UNION":
+            return .union
+        case "ENUM":
+            return .Enum
+        case "INPUT_OBJECT":
+            return .inputObject
+        case "LIST":
+            return .list
+        case "NON_NULL":
+            return .nonnull
+            
         default:
-            return nil
+            return .undefined
         }
     }
 }
@@ -147,7 +159,7 @@ func getTypeReference(type: GraphQLTypeDescription) -> SwiftTypeReference {
     }
 }
 
-func convertFromGraphQLToSwift(types: [GraphQLTypeDescription]) -> [SwiftTypeBuilder] {
+func convertFromGraphQLToSwift(_ types: [GraphQLTypeDescription]) -> [SwiftTypeBuilder] {
     return types.flatMap { graphQLType in
         switch graphQLType.kind {
         case .object?, .interface?:

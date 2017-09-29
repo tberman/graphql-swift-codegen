@@ -31,8 +31,23 @@ command(
             
             let  _ = try? Unboxer.performCustomUnboxing(dictionary: json, closure: { unboxer in
                 do{
-                    let qry  = try IntrospectionQueryResponse(unboxer:unboxer)
-                    print("qry:",qry)
+                    let introspection  = try IntrospectionQueryResponse(unboxer:unboxer)
+                    print("introspection:",introspection)
+                    convertFromGraphQLToSwift(introspection.types.filter { $0.name?.hasPrefix("__") == false }).forEach { builder in
+                        let outputFile = "\(path)/\(builder.name).swift"
+                        
+                        let code = builder.code
+                        
+                        if verbose {
+                            print(code)
+                        }
+                        
+                        do {
+                            try code.write(toFile: outputFile, atomically: false, encoding: String.Encoding.utf8)
+                        } catch {
+                            print("Unable to write to \(outputFile)")
+                        }
+                    }
                 }
                 catch let error{
                     print("Error: incorrect response :",error)
